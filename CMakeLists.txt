@@ -58,13 +58,27 @@ if(TARGET cult_allolib_app)
 endif()
 
 # ── App executable ──────────────────────────────────────────────────────────
-# al_ControlNav.cpp is not compiled by any cult_allolib library target but is
-# needed by the App domain (al_OpenGLGraphicsDomain links against it).
-set(CONTROL_NAV_SRC ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/io/al_ControlNav.cpp)
+# Source files from cult-allolib that are not compiled by any library target
+# but are needed by the App domain (DistributedApp, OmniRenderer, sphere utils).
+set(CULT_ALLOLIB_EXTRA_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/io/al_ControlNav.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/sphere/al_SphereUtils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/sphere/al_PerProjection.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/sphere/al_Meter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/sphere/al_AlloSphereSpeakerLayout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_DistributedScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_DynamicScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_PolySynth.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_PositionedVoice.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_SynthVoice.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_SynthRecorder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/scene/al_SynthSequencer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatialroot/internal/cult-allolib/src/sound/al_StereoPanner.cpp
+)
 
 add_executable(${APP_NAME}
     src/main.cpp
-    ${CONTROL_NAV_SRC}
+    ${CULT_ALLOLIB_EXTRA_SRCS}
 )
 
 target_include_directories(${APP_NAME} PRIVATE

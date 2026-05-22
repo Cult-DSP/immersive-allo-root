@@ -1,9 +1,10 @@
-#include "al/app/al_App.hpp"
+#include "al/app/al_DistributedApp.hpp"
 #include "al/graphics/al_Graphics.hpp"
 #include "al/graphics/al_Mesh.hpp"
 #include "al/graphics/al_Shapes.hpp"
 #include "al/graphics/al_VAOMesh.hpp"
 #include "al/io/al_ControlNav.hpp"
+#include "al/sphere/al_SphereUtils.hpp"
 #include "al/io/al_File.hpp"
 #include "al/math/al_Random.hpp"
 #include "al/math/al_Vec.hpp"
@@ -15,7 +16,9 @@
 #include "shaderToSphere.hpp"
 #include "SpatialRootAlloHost.hpp"
 
-class ImmersiveAlloRootApp : public al::App {
+struct CommonState {};
+
+class ImmersiveAlloRootApp : public al::DistributedAppWithState<CommonState> {
 public:
   // Shader paths
   std::vector<std::string> fragOptions = {
@@ -80,11 +83,17 @@ public:
       }
     }
 
-    // Configure Spatial Root
-    srConfig.sampleRate = 48000;
-    srConfig.blockSize = 512;
-    srConfig.scenePath = "assets/scenes/example.scene.lusid.json";
-    srConfig.layoutPath = "assets/layouts/allosphere.layout.json";
+    // Register distributed parameters with the parameter server
+    parameterServer() << globalTime << running << currentFragIndex;
+    parameterServer() << masterGainDb << dbapFocus << speakerMixDb << subMixDb << elevationMode;
+
+    // Configure Spatial Root (primary only — replica/simulator has no audio)
+    if (isPrimary()) {
+      srConfig.sampleRate = 48000;
+      srConfig.blockSize = 512;
+      srConfig.scenePath = "assets/scenes/example.scene.lusid.json";
+      srConfig.layoutPath = "assets/layouts/allosphere.layout.json";
+    }
   }
 
   void onCreate() override {
@@ -94,13 +103,15 @@ public:
     }
     shadedSphere.update();
 
-    // Initialize Spatial Root (non-blocking on error)
-    if (!spatialRoot.setup(srConfig)) {
-      std::cerr << "Spatial Root setup failed: " << spatialRoot.lastError() << std::endl;
-    } else {
-      srInitialized = true;
-      spatialRoot.setPaused(true);
-      std::cout << "Spatial Root initialized successfully." << std::endl;
+    // Initialize Spatial Root on primary only
+    if (isPrimary()) {
+      if (!spatialRoot.setup(srConfig)) {
+        std::cerr << "Spatial Root setup failed: " << spatialRoot.lastError() << std::endl;
+      } else {
+        srInitialized = true;
+        spatialRoot.setPaused(true);
+        std::cout << "Spatial Root initialized on primary." << std::endl;
+      }
     }
   }
 
@@ -120,7 +131,7 @@ public:
       currentFlag = currentFragIndex.get();
     }
 
-    // Push Spatial Root parameter changes
+    // Push Spatial Root parameter changes (primary only)
     if (srInitialized) {
       spatialRoot.setPaused(!running);
       spatialRoot.setMasterGainDb(masterGainDb);
@@ -142,6 +153,7 @@ public:
   }
 
   bool onKeyDown(const al::Keyboard &k) override {
+    if (isPrimary()) {
     switch (k.key()) {
     case ' ':
       running = !running;
@@ -213,18 +225,33 @@ public:
       }
       break;
     }
+    }
     return true;
   }
 
   void onSound(al::AudioIOData& io) override {
-    spatialRoot.renderAudio(io);
+    if (isPrimary()) {
+      spatialRoot.renderAudio(io);
+    } else {
+      // Replica/simulator: output silence
+      while (io()) {
+        for (int c = 0; c < io.channelsOut(); ++c) {
+          io.out(c) = 0.0f;
+        }
+      }
+    }
   }
 };
 
 int main() {
   ImmersiveAlloRootApp app;
   app.title("Immersive Allo Root");
-  app.configureAudio(48000, 512, 60, 0);
+
+  if (al::sphere::isSphereMachine()) {
+    app.configureAudio(48000, 512, 60, 0);
+  } else {
+    app.configureAudio(48000, 512, 2, 0);
+  }
   app.start();
   return 0;
 }
