@@ -12,3 +12,7 @@
 [submodule "miniShader"]
 	path = miniShader
 	url = https://github.com/lucianpar/miniShader
+[submodule "spatialroot"]
+	path = spatialroot
+	url = https://github.com/Cult-DSP/spatialroot
+	branch = devel
