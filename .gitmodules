@@ -1,14 +1,3 @@
-[submodule "allolib"]
-	path = allolib
-	url = https://github.com/AlloSphere-Research-Group/allolib
-[submodule "al_ext"]
-	path = al_ext
-	url = https://github.com/AlloSphere-Research-Group/al_ext
-
-[submodule "adm-allo-player"]
-	path = adm-allo-player
-	url = https://github.com/lucianpar/adm-allo-player
-
 [submodule "miniShader"]
 	path = miniShader
 	url = https://github.com/lucianpar/miniShader
